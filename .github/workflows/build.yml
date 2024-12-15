@@ -116,8 +116,8 @@ jobs:
           chart-path: helm/projcharts
           namespace: default
           values: |
-            appimage: ${{ secrets.REGISTRY }}/${{ secrets.ECR_REPO_NAME }}
-            apptag: ${{ env.IMAGE_TAG }}
+              appimage: $REGISTRY/$ECR_REPO_NAME
+              apptag: $IMAGE_TAG
           name: project1-stack
    
   
