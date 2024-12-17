@@ -3,17 +3,26 @@ kind: Ingress
 metadata:
   name: vpro-ingress
   annotations:
-    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/use-regex: "true"  # Enable regex for path matching
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"  # Enforce HTTPS
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"  # ArgoCD uses HTTPS
 spec:
   ingressClassName: nginx
   rules:
   - host: eksproject1.satsan.site
     http:
       paths:
-      - path: /
+      - path: /  # Root for your application
         pathType: Prefix
         backend:
           service:
-            name: my-app
+            name: my-app  # Replace with your application service name
             port:
-              number: 8080
+              number: 8080  # Replace with your application service port
+      - path: /argocd(/|$).*  # Match all ArgoCD-related URLs
+        pathType: Prefix
+        backend:
+          service:
+            name: argocd-server
+            port:
+              number: 443
