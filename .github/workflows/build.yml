@@ -1,4 +1,4 @@
-name: Build, Test, and Deploy
+name: Build, Test, SonarQube, Deploy
 
 on:
   push:
@@ -18,6 +18,8 @@ env:
   EKS_CLUSTER: vprofile1-eks
   REGION: us-east-2
   IMAGE_TAG: ${{ github.run_number }}
+  ECR_REPOSITORY: vprofile-repo
+  REGISTRY: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.REGION }}.amazonaws.com
 
 jobs:
   Testing:
@@ -34,47 +36,45 @@ jobs:
           distribution: 'temurin'
           java-version: '11'
 
-      - name: Build with Maven
-        run: mvn test
+      - name: Build and Test with Maven
+        run: |
+          mvn clean test
 
       - name: Run Checkstyle
         run: mvn checkstyle:checkstyle
 
-      - name: Setup SonarQube
+      - name: Setup SonarQube Scanner
         uses: warchant/setup-sonar-scanner@v7
 
-      - name: Analyze with SonarCloud
+      - name: Analyze Code with SonarQube
         run: |
           sonar-scanner \
-            -Dsonar.host.url=${{ secrets.SONAR_URL }} \
-            -Dsonar.organization=${{ secrets.SONAR_ORGANIZATION }} \
-            -Dsonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }} \
-            -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
+            -Dsonar.host.url=${{ env.SONAR_URL }} \
+            -Dsonar.organization=${{ env.SONAR_ORGANIZATION }} \
+            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }} \
+            -Dsonar.login=${{ env.SONAR_TOKEN }} \
             -Dsonar.sources=src/ \
-            -Dsonar.java.binaries=target/classes/com/visualpathit/account \
+            -Dsonar.java.binaries=target/classes \
             -Dsonar.jacoco.reportsPath=target/jacoco.exec \
             -Dsonar.junit.reportsPath=target/surefire-reports/ \
             -Dsonar.java.checkstyle.reportsPaths=target/checkstyle-result.xml
 
-      - name: SonarQube Quality Gate check
-        id: sonarqube-quality-gate-check
+      - name: SonarQube Quality Gate
+        id: sonarqube-quality-gate
         uses: sonarsource/sonarqube-quality-gate-action@master
         timeout-minutes: 5
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_URL: ${{ secrets.SONAR_URL }}
+          SONAR_TOKEN: ${{ env.SONAR_TOKEN }}
+          SONAR_URL: ${{ env.SONAR_URL }}
 
   DockerBuildPush:
     name: "Build and Push Docker Image to ECR"
     runs-on: ubuntu-latest
-    needs: Testing  # Make sure the Testing job completes before this job runs
+    needs: Testing  # Ensures Testing completes successfully first
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: actions/checkout@v4
 
       - name: Configure AWS CLI
         run: |
@@ -86,59 +86,55 @@ jobs:
         run: |
           aws ecr get-login-password --region ${{ env.REGION }} | docker login --username AWS --password-stdin ${{ env.REGISTRY }}
 
-      - name: Build Docker image
+      - name: Build and Push Docker Image
         run: |
-          docker build -t ${{ env.REGISTRY }}/${{ secrets.ECR_REPO_NAME }}:${{ env.IMAGE_TAG }} .
-
-      - name: Push Docker image to ECR
-        run: |
-          docker push ${{ env.REGISTRY }}/${{ secrets.ECR_REPO_NAME }}:${{ env.IMAGE_TAG }}
+          docker build -t ${{ env.REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }} .
+          docker push ${{ env.REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
 
   DeployEKS:
-    name: "Install ArgoCD and Deploy Helm Charts"
+    name: "Deploy to EKS with Helm and ArgoCD"
     runs-on: ubuntu-latest
-    needs: DockerBuildPush
+    needs: DockerBuildPush  # Ensures Docker image is built and pushed first
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - name: Deploy Helm to EKS
-        uses: bitovi/github-actions-deploy-eks-helm@v1.2.12
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.REGION }}
-          cluster-name: ${{ env.EKS_CLUSTER }}
-          chart-path: helm/projcharts
-          namespace: default
-          values: |
-            appimage: ${{ secrets.REGISTRY }}/${{ secrets.ECR_REPO_NAME }}
-            apptag: ${{ env.IMAGE_TAG }}
-          name: project1-stack
-   
-  setup-argocd:
-    runs-on: ubuntu-latest
-    needs: DeployEKS
-    steps:
-      # Step 1: Checkout Repository
-      - name: Checkout Code
-        uses: actions/checkout@v2
-
-      # Step 2: Configure AWS CLI for EKS
       - name: Configure AWS CLI
         run: |
           aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws configure set region ${{env.REGION}}
-          aws eks --region ${{env.REGION}} update-kubeconfig --name ${{env.EKS_CLUSTER}}
+          aws configure set region ${{ env.REGION }}
 
-      # Step 3: Install Argo CD
-      - name: Install Argo CD
+      - name: Update kubeconfig for EKS
         run: |
-          kubectl create namespace argocd || true
-          helm repo add argo-cd https://argoproj.github.io/argo-helm
-          helm repo update
-          helm install argocd argo-cd/argo-cd --namespace argocd --wait
+          aws eks update-kubeconfig --region ${{ env.REGION }} --name ${{ env.EKS_CLUSTER }}
 
-      
+      - name: Install ArgoCD (if not already installed)
+        run: |
+          helm repo add argo https://argoproj.github.io/argo-helm
+          helm repo update
+          helm upgrade --install argocd argo/argo-cd \
+            --namespace argocd --create-namespace \
+            --set server.service.type=LoadBalancer
+
+      - name: Wait for ArgoCD server to be ready
+        run: |
+          kubectl wait --namespace argocd \
+            --for=condition=available deploy/argocd-server --timeout=120s
+
+      - name: Deploy Custom Helm Charts to ArgoCD
+        run: |
+          kubectl apply -f argocd_app/application.yml
+
+      - name: Deploy Helm Chart for Application
+        run: |
+          helm upgrade --install custom-helm-app ./helm/projcharts \
+          --namespace default \
+          --set appimage=${{ env.REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }} \
+          --set apptag=${{ env.IMAGE_TAG }}
+
+      - name: Verify Deployment
+        run: |
+          kubectl get pods --namespace default
+          kubectl get svc --namespace default
