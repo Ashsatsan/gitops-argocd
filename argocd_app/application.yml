@@ -1,17 +1,21 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: project1-app
+  name: project1-stack
   namespace: argocd
 spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/Ashsatsan/gitops-argocd.git'
+    targetRevision: main
+    path: helm/projcharts
+    helm:
+      valueFiles:
+        - values.yaml                # Default configurations          
   destination:
     server: https://kubernetes.default.svc
-    namespace: default
-  source:
-    repoURL:   # Replace with your GitHub repository URL
-    targetRevision: main  # Change to the desired branch or commit SHA
-    path: ./helm/projcharts  # Path to your Helm charts in the Git repository
+    namespace: default          # Target namespace
   syncPolicy:
     automated:
-      prune: true  # Automatically delete resources not in the source
-      selfHeal: true  
+      prune: true
+      selfHeal: true
