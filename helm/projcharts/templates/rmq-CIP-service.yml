@@ -5,7 +5,7 @@ metadata:
 spec:
   ports:
   - port: 5672
-    targetPort: vpromq01-port
+    targetPort: 5672
     protocol: TCP
   selector:
     app: vpromq01

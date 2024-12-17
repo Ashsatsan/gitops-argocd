@@ -5,7 +5,7 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/use-regex: "true"  # Enable regex for path matching
     nginx.ingress.kubernetes.io/ssl-redirect: "true"  # Enforce HTTPS
-    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"  # ArgoCD uses HTTPS
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"  # ArgoCD uses HTTPS
 spec:
   ingressClassName: nginx
   rules:
