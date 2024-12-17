@@ -9,28 +9,20 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: eksproject1.satsan.site
-    http:
-      paths:
-      - path: /  # Root for your application
-        pathType: Prefix
-        backend:
-          service:
-            name: my-app  # Replace with your application service name
-            port:
-              number: 8080  # Replace with your application service port
-      - path: /argocd
-  pathType: Prefix
-  backend:
-    service:
-      name: argocd-server
-      port:
-        number: 443
-- path: /argocd/
-  pathType: Prefix
-  backend:
-    service:
-      name: argocd-server
-      port:
-        number: 443
-
+    - host: eksproject1.satsan.site
+      http:
+        paths:
+          - path: /  # Root for your application
+            pathType: Prefix
+            backend:
+              service:
+                name: my-app  # Replace with your application service name
+                port:
+                  number: 8080  # Replace with your application service port
+          - path: /argocd  # ArgoCD path
+            pathType: Prefix
+            backend:
+              service:
+                name: argocd-server
+                port:
+                  number: 443
