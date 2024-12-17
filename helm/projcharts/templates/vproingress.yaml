@@ -19,17 +19,18 @@ spec:
             name: my-app  # Replace with your application service name
             port:
               number: 8080  # Replace with your application service port
-      - path: /argocd  # Match ArgoCD URLs
-        pathType: Prefix
-        backend:
-          service:
-            name: argocd-server
-            port:
-              number: 443
-      - path: /argocd/  # Match ArgoCD URLs with trailing slash
-        pathType: Prefix
-        backend:
-          service:
-            name: argocd-server
-            port:
-              number: 443
+      - path: /argocd
+  pathType: Prefix
+  backend:
+    service:
+      name: argocd-server
+      port:
+        number: 443
+- path: /argocd/
+  pathType: Prefix
+  backend:
+    service:
+      name: argocd-server
+      port:
+        number: 443
+
