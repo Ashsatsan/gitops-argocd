@@ -11,7 +11,7 @@ on:
     inputs:
       run_deployEKS:
         description: "Run DeployEKS job only"
-        required: true
+        required: false
         default: "false"
 
 env:
