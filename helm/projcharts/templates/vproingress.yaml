@@ -11,7 +11,7 @@ spec:
     - host: eksproject1.satsan.site
       http:
         paths:
-          - path: /
+          - path: /custom
             pathType: Prefix
             backend:
               service:
