@@ -7,7 +7,7 @@ on:
   pull_request:
     branches:
       - main
-  workflwow_dispatch:  # Add manual trigger
+  workflow_dispatch:  # Add manual trigger
     inputs:
       run_deployEKS:
         description: "Run DeployEKS job only"
