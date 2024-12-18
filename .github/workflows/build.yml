@@ -137,7 +137,7 @@ jobs:
             helm install ingress-nginx ingress-nginx/ingress-nginx \
               --namespace ingress-nginx \
               --create-namespace \
-              --set controller.service.type=LoadBalancer
+              --set controller.service.type=ClusterIP
           fi
 
       - name: Install or Upgrade ArgoCD
