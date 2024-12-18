@@ -1,0 +1,81 @@
+name: Deploy to EKS
+
+on:
+  push:
+    branches:
+      - main 
+
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  EKS_CLUSTER: vprofile1-eks
+  REGION: us-east-2
+  IMAGE_TAG: ${{ github.run_number }}
+  REGISTRY: ${{ secrets.REGISTRY }}
+
+jobs:
+  DeployEKS:
+    name: "Deploy to EKS with Helm and ArgoCD"
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS CLI
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set region ${{ env.REGION }}
+
+      - name: Update kubeconfig for EKS
+        run: |
+          aws eks update-kubeconfig --region ${{ env.REGION }} --name ${{ env.EKS_CLUSTER }}
+
+      - name: Set up Helm repositories
+        run: |
+          helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+          helm repo add argo https://argoproj.github.io/argo-helm
+          helm repo update
+
+      - name: Install or Upgrade Nginx Ingress Controller
+        run: |
+          if helm list -n ingress-nginx | grep -q "ingress-nginx"; then
+            echo "Ingress-NGINX controller already exists. Upgrading..."
+            helm upgrade ingress-nginx ingress-nginx/ingress-nginx \
+              --namespace ingress-nginx \
+              --set controller.service.type=LoadBalancer
+          else
+            echo "Ingress-NGINX controller not found. Installing..."
+            helm install ingress-nginx ingress-nginx/ingress-nginx \
+              --namespace ingress-nginx \
+              --create-namespace \
+              --set controller.service.type=LoadBalancer
+          fi
+
+      - name: Install or Upgrade ArgoCD
+        run: |
+          helm upgrade --install argocd argo/argo-cd \
+            --namespace argocd --create-namespace \
+            --set server.service.type=ClusterIP
+
+      - name: Wait for ArgoCD server to be ready
+        run: |
+          kubectl wait --namespace argocd \
+            --for=condition=available deploy/argocd-server --timeout=120s
+
+      - name: Deploy Custom Helm Charts to ArgoCD
+        run: |
+          kubectl apply -f argocd_app/application.yml
+
+      - name: Deploy Helm Chart for Application
+        run: |
+          helm upgrade --install custom-helm-app ./helm/projcharts \
+          --namespace default \
+          --set appimage=${{ secrets.REGISTRY }}/${{ secrets.ECR_REPO_NAME }} \
+          --set apptag=${{ env.IMAGE_TAG }}
+
+      - name: Verify Deployment
+        run: |
+          kubectl get pods --namespace default
+          kubectl get svc --namespace default
