@@ -1,41 +1,19 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: my-app-ingress
+  name: vpro-ingress
   annotations:
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"  # Enforce HTTPS globally
-    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"  # HTTP backend
+    nginx.ingress.kubernetes.io/use-regex: "true"
 spec:
   ingressClassName: nginx
   rules:
-    - host: eksproject1.satsan.site
-      http:
-        paths:
-          - path: /custom
-            pathType: Prefix
-            backend:
-              service:
-                name: my-app
-                port:
-                  number: 8080
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: argocd-ingress
-  annotations:
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"  # Enforce HTTPS globally
-    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"  # HTTPS backend
-spec:
-  ingressClassName: nginx
-  rules:
-    - host: eksproject1.satsan.site
-      http:
-        paths:
-          - path: /argocd
-            pathType: Prefix
-            backend:
-              service:
-                name: argocd-server
-                port:
-                  number: 443
+  - host: eksproject1.satsan.site
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: my-app
+            port:
+              number: 8080

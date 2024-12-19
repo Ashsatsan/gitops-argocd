@@ -144,7 +144,7 @@ jobs:
         run: |
           helm upgrade --install argocd argo/argo-cd \
             --namespace argocd --create-namespace \
-            --set server.service.type=ClusterIP
+            --set server.service.type=LoadBalancer
 
       - name: Wait for ArgoCD server to be ready
         run: |
