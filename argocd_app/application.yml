@@ -13,6 +13,10 @@ spec:
     targetRevision: HEAD  # Track the latest revision (or specify a branch)
     path: helm/projcharts  # Path to the Helm chart directory
     helm:
-      valueFiles:
-        - values.yaml  # Reference your values.yaml file where 'appimage' and 'apptag' are defined
+      releaseName: custom-helm-app
+      parameters:
+        - name: appimage
+          value: "{{ .Values.appimage }}"  # Placeholder for image
+        - name: apptag
+          value: "{{ .Values.apptag }}"  # Placeholder for tag
   project: default  # Reference the ArgoCD project (default or custom)
