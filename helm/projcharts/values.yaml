@@ -1,4 +1,3 @@
 # values.yaml
-image:
-  appimage: "your-registry/your-repo"  # Default value, placeholder
-  apptag: "latest"                    # Default value, placeholder
+appimage: "your-registry/your-repo"  # Default value, placeholder
+apptag: "latest"                    # Default value, placeholder

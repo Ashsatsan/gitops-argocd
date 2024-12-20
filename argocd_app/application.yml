@@ -6,17 +6,13 @@ metadata:
 spec:
   destination:
     name: ""
-    namespace: default  # Deploy to the 'default' namespace
+    namespace: default
     server: https://kubernetes.default.svc
   source:
-    repoURL: https://github.com/Ashsatsan/gitops-argocd.git  # Your GitHub repository
-    targetRevision: HEAD  # Track the latest revision (or specify a branch)
-    path: helm/projcharts  # Path to the Helm chart directory
+    repoURL: https://github.com/Ashsatsan/gitops-argocd.git
+    targetRevision: HEAD
+    path: helm/projcharts
     helm:
       releaseName: custom-helm-app
-      parameters:
-        - name: appimage
-          value: "{{ .Values.appimage }}"  # Placeholder for image
-        - name: apptag
-          value: "{{ .Values.apptag }}"  # Placeholder for tag
-  project: default  # Reference the ArgoCD project (default or custom)
+      values: ./helm/projcharts/values-override.yaml  # Reference to dynamically generated file
+  project: default
