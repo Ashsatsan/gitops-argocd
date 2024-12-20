@@ -157,14 +157,12 @@ jobs:
 
       - name: Deploy Helm Chart for Application
         run: |
-        echo "appimage=${{ secrets.REGISTRY }}/${{ secrets.ECR_REPO_NAME }}" >> ./helm/projcharts/values-override.yaml
-        echo "apptag=${{ env.IMAGE_TAG }}" >> ./helm/projcharts/values-override.yaml
+          echo "appimage=${{ secrets.REGISTRY }}/${{ secrets.ECR_REPO_NAME }}" >> ./helm/projcharts/values-override.yaml
+          echo "apptag=${{ env.IMAGE_TAG }}" >> ./helm/projcharts/values-override.yaml
 
-        helm upgrade --install custom-helm-app ./helm/projcharts \
-        --namespace default \
-        --values ./helm/projcharts/values-override.yaml
-
-
+          helm upgrade --install custom-helm-app ./helm/projcharts \
+            --namespace default \
+            --values ./helm/projcharts/values-override.yaml
 
       - name: Verify Deployment
         run: |
