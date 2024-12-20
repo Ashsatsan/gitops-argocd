@@ -14,5 +14,9 @@ spec:
     path: helm/projcharts
     helm:
       releaseName: custom-helm-app
-      values: ./helm/projcharts/values-override.yaml  # Reference to dynamically generated file
+      parameters:  # Use Helm parameters instead of values file
+        - name: appimage
+          value: ""  # You can leave this empty or remove it if not needed
+        - name: apptag
+          value: ""
   project: default

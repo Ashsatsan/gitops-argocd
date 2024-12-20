@@ -31,7 +31,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4  # Consistent version
 
       - name: Setup Java 11
         uses: actions/setup-java@v3
@@ -77,7 +77,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v2  # Consider upgrading to v4
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -107,7 +107,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4  # Consistent version
 
       - name: Configure AWS CLI
         run: |
@@ -157,12 +157,10 @@ jobs:
 
       - name: Deploy Helm Chart for Application
         run: |
-          printf "appimage: %s\napptag: %s\n" "${{ secrets.REGISTRY }}/${{ secrets.ECR_REPO_NAME }}" "${IMAGE_TAG}" > ./helm/projcharts/values-override.yaml
-
-
           helm upgrade --install custom-helm-app ./helm/projcharts \
             --namespace default \
-            --values ./helm/projcharts/values-override.yaml
+            --set appimage=${{ secrets.REGISTRY }}/${{ secrets.ECR_REPO_NAME }} \
+            --set apptag=${{ env.IMAGE_TAG }}
 
       - name: Verify Deployment
         run: |
