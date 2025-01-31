@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Values.vprodb.name }}
+  labels:
+    app: {{ .Values.vprodb.name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.vprodb.name }}
+  serviceName: "{{ .Values.vprodb.name }}"
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.vprodb.name }}
+    spec:
+      containers:
+      - name: {{ .Values.vprodb.name }}
+        image: {{ .Values.vprodb.image }}
+        ports:
+        - name: db-port
+          containerPort: {{ .Values.vprodb.port }}
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.vprodb.secretKeyRef.name }}
+              key: {{ .Values.vprodb.secretKeyRef.key }}
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/mysql
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+      - {{ .Values.vprodb.storage.accessMode }}
+      resources:
+        requests:
+          storage: {{ .Values.vprodb.storage.size }}
+      storageClassName: {{ .Values.vprodb.storage.storageClassName | quote }}

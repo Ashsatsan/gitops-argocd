@@ -7,13 +7,13 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: eksproject1.satsan.site
+  - host: {{ .Values.ingress.host }}
     http:
       paths:
       - path: /
         pathType: Prefix
         backend:
           service:
-            name: my-app
+            name: {{ .Values.vproapp.name }}
             port:
-              number: 8080
+              number: {{ .Values.vproapp.port }}

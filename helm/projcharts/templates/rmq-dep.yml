@@ -1,31 +1,30 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: vpromq01
+  name: {{ .Values.vprormq.name }}  # Updated from rmqdep to vprormq
   labels:
-    app: vpromq01
+    app: {{ .Values.vprormq.name }}  # Updated from rmqdep to vprormq
 spec:
+  replicas: 1
   selector:
     matchLabels:
-      app: vpromq01
-  replicas: 1
+      app: {{ .Values.vprormq.name }}  # Updated from rmqdep to vprormq
   template:
     metadata:
       labels:
-        app: vpromq01
+        app: {{ .Values.vprormq.name }}  # Updated from rmqdep to vprormq
     spec:
       containers:
-      - name: vpromq01
-        image: rabbitmq
+      - name: {{ .Values.vprormq.name }}  # Updated from rmqdep to vprormq
+        image: {{ .Values.vprormq.image }}  # Updated from rmqdep to vprormq
         ports:
-        - name: vpromq01-port
-          containerPort: 5672
-        env: 
-         - name: RABBITMQ_DEFAULT_PASS
-           valueFrom:
-             secretKeyRef:
-               name: app-secret
-               key: rmq-pass
-         - name: RABBITMQ_DEFAULT_USER
-           value: "guest"
-
+        - name: rabbitmq-port
+          containerPort: {{ .Values.vprormq.port }}  # Updated from rmqdep to vprormq
+        env:
+        - name: RABBITMQ_DEFAULT_PASS
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.vprormq.secretKeyRef.name }}  # Updated from rmqdep to vprormq
+              key: {{ .Values.vprormq.secretKeyRef.key }}  # Updated from rmqdep to vprormq
+        - name: RABBITMQ_DEFAULT_USER
+          value: {{ .Values.vprormq.username }}  # Updated from rmqdep to vprormq

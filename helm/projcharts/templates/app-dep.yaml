@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.vprormq.name }}
+  labels:
+    app: {{ .Values.vprormq.name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.vprormq.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.vprormq.name }}
+    spec:
+      containers:
+      - name: vproapp
+        image: {{ .Values.app.image }}:{{ .Values.app.tag }}
+        ports:
+        - name: app-port
+          containerPort: {{ .Values.app.port }}
+      initContainers:
+      - name: init-mydb
+        image: busybox
+        command:
+        - sh
+        - -c
+        - |
+          until nslookup vprodb.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for mydb; sleep 2; done;
+      - name: init-memcache
+        image: busybox
+        command:
+        - sh
+        - -c
+        - |
+          until nslookup vprocache01.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for memcache; sleep 2; done;

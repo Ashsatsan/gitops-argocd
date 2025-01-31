@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.vpromc.name }}
+  labels:
+    app: {{ .Values.vpromc.name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.vpromc.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.vpromc.name }}
+    spec:
+      containers:
+      - name: {{ .Values.vpromc.name }}
+        image: {{ .Values.vpromc.image }}
+        ports:
+        - name: memcache-port
+          containerPort: {{ .Values.vpromc.port }}
