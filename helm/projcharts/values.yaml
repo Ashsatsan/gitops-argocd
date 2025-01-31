@@ -1,3 +1,61 @@
-# values.yaml
-appimage: "your-registry/your-repo"  # Default value, placeholder
-apptag: "latest"                    # Default value, placeholder
+appimage: ""
+apptag: ""  
+
+# Application Configuration
+vproapp:
+  name: vproapp
+  image: my-app-image
+  tag: latest
+  port: 8080
+  serviceName: vproapp  
+  targetPort: 8080      
+
+# Memcached Configuration
+vpromc:
+  name: vpromc
+  image: memcached
+  port: 11211
+  serviceName: vprocache01  
+  targetPort: 11211         
+
+# RabbitMQ Configuration
+vprormq:
+  name: vpromq01
+  image: rabbitmq
+  port: 5672
+  username: guest
+  secretKeyRef:
+    name: app-secret
+    key: rmq-pass
+  serviceName: vpromq01  
+  targetPort: 5672        
+
+# Database Configuration
+vprodb:
+  name: vprodb
+  image: vprofile/vprofiledb
+  port: 3306
+  secretKeyRef:
+    name: app-secret
+    key: db-pass
+  storage:
+    size: 1Gi
+    accessMode: ReadWriteOnce
+    storageClassName: "" 
+  serviceName: vprodb 
+  targetPort: 3306      
+
+# Ingress Configuration
+ingress:
+  host: eksproject1.satsan.site 
+
+role:
+  name: helm-role
+
+roleBinding:
+  name: helm-rolebinding
+
+serviceAccount:
+  name: helm-service-account
+
+namespace: argocd

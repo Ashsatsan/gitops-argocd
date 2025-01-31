@@ -9,14 +9,14 @@ spec:
     namespace: default
     server: https://kubernetes.default.svc
   source:
-    repoURL: https://github.com/Ashsatsan/gitops-argocd.git
+    repoURL: https://github.com/Ashsatsan/gitops-argocd.git  # Your Git repository
     targetRevision: HEAD
-    path: helm/projcharts
+    path: helm/projcharts  # Path to your Helm chart
     helm:
       releaseName: custom-helm-app
-      parameters:  # Use Helm parameters instead of values file
+      parameters:
         - name: appimage
-          value: ""  # You can leave this empty or remove it if not needed
+          value: '202533515324.dkr.ecr.us-east-2.amazonaws.com/projstack'  # Use Helm values
         - name: apptag
-          value: ""
+          value: 'latest'  # Use Helm values
   project: default

@@ -1,5 +1,5 @@
 apiVersion: v2
-name: custom-helm-app  # The name of your Helm chart
+name: projcharts  # The name of your Helm chart
 description: A brief description of your application
 type: application  # Default is 'application'; set 'library' for reusable charts
 version: 1.0.0  # The version of the chart itself
