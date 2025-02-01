@@ -121,48 +121,30 @@ jobs:
 
       - name: Set up Helm repositories
         run: |
-          helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
           helm repo add argo https://argoproj.github.io/argo-helm
           helm repo update
-
-      - name: Install or Upgrade Nginx Ingress Controller
-        run: |
-          if helm list -n ingress-nginx | grep -q "ingress-nginx"; then
-            echo "Ingress-NGINX controller already exists. Upgrading..."
-            helm upgrade ingress-nginx ingress-nginx/ingress-nginx \
-              --namespace ingress-nginx \
-              --set controller.service.type=LoadBalancer
-          else
-            echo "Ingress-NGINX controller not found. Installing..."
-            helm install ingress-nginx ingress-nginx/ingress-nginx \
-              --namespace ingress-nginx \
-              --create-namespace \
-              --set controller.service.type=LoadBalancer
-          fi
 
       - name: Install or Upgrade ArgoCD
         run: |
           helm upgrade --install argocd argo/argo-cd \
             --namespace argocd --create-namespace \
-            --set server.service.type=LoadBalancer
+            --set server.service.type=ClusterIP
 
       - name: Wait for ArgoCD server to be ready
         run: |
           kubectl wait --namespace argocd \
             --for=condition=available deploy/argocd-server --timeout=120s
 
-      - name: Deploy Custom Helm Charts to ArgoCD
+      - name: Update ArgoCD Application YAML
         run: |
-          kubectl apply -f argocd_app/application.yml
+          sed -i "s|{{ secrets.REGISTRY }}/{{ secrets.ECR_REPO_NAME }}|${{ env.REGISTRY }}/${{ secrets.ECR_REPO_NAME }}|g" argocd_app/application.yml
+          sed -i "s|{{ env.IMAGE_TAG }}|${{ env.IMAGE_TAG }}|g" argocd_app/application.yml
 
-      - name: Deploy Helm Chart for Application
-        run: |
-          helm upgrade --install custom-helm-app ./helm/projcharts \
-            --namespace default \
-            --set appimage=${{ secrets.REGISTRY }}/${{ secrets.ECR_REPO_NAME }} \
-            --set apptag=${{ env.IMAGE_TAG }}
+      - name: Apply ArgoCD Application
+        run: kubectl apply -f argocd_app/application.yml
 
       - name: Verify Deployment
         run: |
           kubectl get pods --namespace default
           kubectl get svc --namespace default
+ 
