@@ -5,18 +5,24 @@ metadata:
   namespace: argocd
 spec:
   destination:
-    name: ""
     namespace: default
     server: https://kubernetes.default.svc
   source:
-    repoURL: https://github.com/Ashsatsan/gitops-argocd.git  # Your Git repository
-    targetRevision: HEAD
-    path: helm/projcharts  # Path to your Helm chart
+    repoURL: https://github.com/Ashsatsan/gitops-argocd.git
+    targetRevision: main
+    path: helm/projcharts
     helm:
       releaseName: custom-helm-app
+      valueFiles:
+        - values.yaml      
       parameters:
         - name: appimage
-          value: '202533515324.dkr.ecr.us-east-2.amazonaws.com/projstack'  # Use Helm values
+          value: "{{ secrets.REGISTRY }}/{{ secrets.ECR_REPO_NAME }}"  # Dynamic image repo
         - name: apptag
-          value: 'latest'  # Use Helm values
+          value: "{{ env.IMAGE_TAG }}"  # Dynamic image tag
   project: default
+
+  syncPolicy:
+    automated:
+      prune: true  # Automatically delete resources no longer tracked
+      selfHeal: true 

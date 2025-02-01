@@ -1,0 +1,496 @@
+[33mcommit 814888fdb13e382de88cdff68938a7a96cab3c2d[m
+Author: Ashsatsan <ahundal6@myseneca.ca>
+Date:   Thu Jan 30 19:43:17 2025 -0500
+
+    updating helm
+
+[1mdiff --git a/helm/projcharts/templates/app-dep.yaml b/helm/projcharts/templates/app-dep.yaml[m
+[1mnew file mode 100644[m
+[1mindex 0000000..b3f144b[m
+[1m--- /dev/null[m
+[1m+++ b/helm/projcharts/templates/app-dep.yaml[m
+[36m@@ -0,0 +1,37 @@[m
+[32m+[m[32mapiVersion: apps/v1[m
+[32m+[m[32mkind: Deployment[m
+[32m+[m[32mmetadata:[m
+[32m+[m[32m  name: {{ .Values.vprormq.name }}[m
+[32m+[m[32m  labels:[m
+[32m+[m[32m    app: {{ .Values.vprormq.name }}[m
+[32m+[m[32mspec:[m
+[32m+[m[32m  replicas: 1[m
+[32m+[m[32m  selector:[m
+[32m+[m[32m    matchLabels:[m
+[32m+[m[32m      app: {{ .Values.vprormq.name }}[m
+[32m+[m[32m  template:[m
+[32m+[m[32m    metadata:[m
+[32m+[m[32m      labels:[m
+[32m+[m[32m        app: {{ .Values.vprormq.name }}[m
+[32m+[m[32m    spec:[m
+[32m+[m[32m      containers:[m
+[32m+[m[32m      - name: vproapp[m
+[32m+[m[32m        image: {{ .Values.app.image }}:{{ .Values.app.tag }}[m
+[32m+[m[32m        ports:[m
+[32m+[m[32m        - name: app-port[m
+[32m+[m[32m          containerPort: {{ .Values.app.port }}[m
+[32m+[m[32m      initContainers:[m
+[32m+[m[32m      - name: init-mydb[m
+[32m+[m[32m        image: busybox[m
+[32m+[m[32m        command:[m
+[32m+[m[32m        - sh[m
+[32m+[m[32m        - -c[m
+[32m+[m[32m        - |[m
+[32m+[m[32m          until nslookup vprodb.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for mydb; sleep 2; done;[m
+[32m+[m[32m      - name: init-memcache[m
+[32m+[m[32m        image: busybox[m
+[32m+[m[32m        command:[m
+[32m+[m[32m        - sh[m
+[32m+[m[32m        - -c[m
+[32m+[m[32m        - |[m
+[32m+[m[32m          until nslookup vprocache01.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for memcache; sleep 2; done;[m
+[1mdiff --git a/helm/projcharts/templates/app-svc.yaml b/helm/projcharts/templates/app-svc.yaml[m
+[1mnew file mode 100644[m
+[1mindex 0000000..9e067cb[m
+[1m--- /dev/null[m
+[1m+++ b/helm/projcharts/templates/app-svc.yaml[m
+[36m@@ -0,0 +1,12 @@[m
+[32m+[m[32mapiVersion: v1[m
+[32m+[m[32mkind: Service[m
+[32m+[m[32mmetadata:[m
+[32m+[m[32m  name: {{ .Values.vproapp.serviceName }}[m
+[32m+[m[32mspec:[m
+[32m+[m[32m  ports:[m
+[32m+[m[32m  - port: {{ .Values.vproapp.port }}[m
+[32m+[m[32m    protocol: TCP[m
+[32m+[m[32m    targetPort: {{ .Values.vproapp.targetPort }}[m
+[32m+[m[32m  selector:[m
+[32m+[m[32m    app: {{ .Values.vproapp.name }}[m
+[32m+[m[32m  type: ClusterIP[m
+[1mdiff --git a/helm/projcharts/templates/db-CIP.yml b/helm/projcharts/templates/db-CIP.yml[m
+[1mdeleted file mode 100644[m
+[1mindex 2ecb8da..0000000[m
+[1m--- a/helm/projcharts/templates/db-CIP.yml[m
+[1m+++ /dev/null[m
+[36m@@ -1,12 +0,0 @@[m
+[31m-apiVersion: v1[m
+[31m-kind: Service[m
+[31m-metadata:[m
+[31m-  name: vprodb[m
+[31m-spec:[m
+[31m-  ports:[m
+[31m-  - port: 3306[m
+[31m-    targetPort: vprodb-port[m
+[31m-    protocol: TCP[m
+[31m-  selector:[m
+[31m-    app: vprodb[m
+[31m-  type: ClusterIP[m
+[1mdiff --git a/helm/projcharts/templates/db-statefulset.yaml b/helm/projcharts/templates/db-statefulset.yaml[m
+[1mnew file mode 100644[m
+[1mindex 0000000..21bb110[m
+[1m--- /dev/null[m
+[1m+++ b/helm/projcharts/templates/db-statefulset.yaml[m
+[36m@@ -0,0 +1,42 @@[m
+[32m+[m[32mapiVersion: apps/v1[m
+[32m+[m[32mkind: StatefulSet[m
+[32m+[m[32mmetadata:[m
+[32m+[m[32m  name: {{ .Values.vprodb.name }}[m
+[32m+[m[32m  labels:[m
+[32m+[m[32m    app: {{ .Values.vprodb.name }}[m
+[32m+[m[32mspec:[m
+[32m+[m[32m  replicas: 1[m
+[32m+[m[32m  selector:[m
+[32m+[m[32m    matchLabels:[m
+[32m+[m[32m      app: {{ .Values.vprodb.name }}[m
+[32m+[m[32m  serviceName: "{{ .Values.vprodb.name }}"[m
+[32m+[m[32m  template:[m
+[32m+[m[32m    metadata:[m
+[32m+[m[32m      labels:[m
+[32m+[m[32m        app: {{ .Values.vprodb.name }}[m
+[32m+[m[32m    spec:[m
+[32m+[m[32m      containers:[m
+[32m+[m[32m      - name: {{ .Values.vprodb.name }}[m
+[32m+[m[32m        image: {{ .Values.vprodb.image }}[m
+[32m+[m[32m        ports:[m
+[32m+[m[32m        - name: db-port[m
+[32m+[m[32m          containerPort: {{ .Values.vprodb.port }}[m
+[32m+[m[32m        env:[m
+[32m+[m[32m        - name: MYSQL_ROOT_PASSWORD[m
+[32m+[m[32m          valueFrom:[m
+[32m+[m[32m            secretKeyRef:[m
+[32m+[m[32m              name: {{ .Values.vprodb.secretKeyRef.name }}[m
+[32m+[m[32m              key: {{ .Values.vprodb.secretKeyRef.key }}[m
+[32m+[m[32m        volumeMounts:[m
+[32m+[m[32m        - name: data[m
+[32m+[m[32m          mountPath: /var/lib/mysql[m
+[32m+[m[32m  volumeClaimTemplates:[m
+[32m+[m[32m  - metadata:[m
+[32m+[m[32m      name: data[m
+[32m+[m[32m    spec:[m
+[32m+[m[32m      accessModes:[m
+[32m+[m[32m      - {{ .Values.vprodb.storage.accessMode }}[m
+[32m+[m[32m      resources:[m
+[32m+[m[32m        requests:[m
+[32m+[m[32m          storage: {{ .Values.vprodb.storage.size }}[m
+[32m+[m[32m      storageClassName: {{ .Values.vprodb.storage.storageClassName | quote }}[m
+[1mdiff --git a/helm/projcharts/templates/db-svc.yaml b/helm/projcharts/templates/db-svc.yaml[m
+[1mnew file mode 100644[m
+[1mindex 0000000..ffce586[m
+[1m--- /dev/null[m
+[1m+++ b/helm/projcharts/templates/db-svc.yaml[m
+[36m@@ -0,0 +1,12 @@[m
+[32m+[m[32mapiVersion: v1[m
+[32m+[m[32mkind: Service[m
+[32m+[m[32mmetadata:[m
+[32m+[m[32m  name: {{ .Values.vprodb.serviceName }}[m
+[32m+[m[32mspec:[m
+[32m+[m[32m  ports:[m
+[32m+[m[32m  - port: {{ .Values.vprodb.port }}[m
+[32m+[m[32m    targetPort: {{ .Values.vprodb.targetPort }}[m
+[32m+[m[32m    protocol: TCP[m
+[32m+[m[32m  selector:[m
+[32m+[m[32m    app: {{ .Values.vprodb.name }}[m
+[32m+[m[32m  type: ClusterIP[m
+[1mdiff --git a/helm/projcharts/templates/helm-role.yml b/helm/projcharts/templates/helm-role.yml[m
+[1mnew file mode 100644[m
+[1mindex 0000000..34425cb[m
+[1m--- /dev/null[m
+[1m+++ b/helm/projcharts/templates/helm-role.yml[m
+[36m@@ -0,0 +1,15 @@[m
+[32m+[m[32mapiVersion: rbac.authorization.k8s.io/v1[m
+[32m+[m[32mkind: Role[m
+[32m+[m[32mmetadata:[m
+[32m+[m[32m  name: {{ .Values.role.name }}[m
+[32m+[m[32m  namespace: {{ .Values.namespace }}[m
+[32m+[m[32mrules:[m
+[32m+[m[32m  - apiGroups: [""][m
+[32m+[m[32m    resources: ["pods", "services", "configmaps", "secrets"][m
+[32m+[m[32m    verbs: ["create", "get", "list", "watch", "delete", "update"][m
+[32m+[m[32m  - apiGroups: ["apps"][m
+[32m+[m[32m    resources: ["deployments", "statefulsets", "replicasets"][m
+[32m+[m[32m    verbs: ["create", "get", "list", "watch", "delete", "update"][m
+[32m+[m[32m  - apiGroups: ["batch"][m
+[32m+[m[32m    resources: ["jobs", "cronjobs"][m
+[32m+[m[32m    verbs: ["create", "get", "list", "watch", "delete", "update"][m
+[1mdiff --git a/helm/projcharts/templates/helm-rolebinding.yml b/helm/projcharts/templates/helm-rolebinding.yml[m
+[1mnew file mode 100644[m
+[1mindex 0000000..6db6c76[m
+[1m--- /dev/null[m
+[1m+++ b/helm/projcharts/templates/helm-rolebinding.yml[m
+[36m@@ -0,0 +1,13 @@[m
+[32m+[m[32mapiVersion: rbac.authorization.k8s.io/v1[m
+[32m+[m[32mkind: RoleBinding[m
+[32m+[m[32mmetadata:[m
+[32m+[m[32m  name: {{ .Values.roleBinding.name }}[m
+[32m+[m[32m  namespace: {{ .Values.namespace }}[m
+[32m+[m[32msubjects:[m
+[32m+[m[32m  - kind: ServiceAccount[m
+[32m+[m[32m    name: {{ .Values.serviceAccount.name }}[m
+[32m+[m[32m    namespace: {{ .Values.namespace }}[m
+[32m+[m[32mroleRef:[m
+[32m+[m[32m  kind: Role[m
+[32m+[m[32m  name: {{ .Values.role.name }}[m
+[32m+[m[32m  apiGroup: rbac.authorization.k8s.io[m
+[1mdiff --git a/helm/projcharts/templates/helm-serviceAccount.yml b/helm/projcharts/templates/helm-serviceAccount.yml[m
+[1mnew file mode 100644[m
+[1mindex 0000000..ad73927[m
+[1m--- /dev/null[m
+[1m+++ b/helm/projcharts/templates/helm-serviceAccount.yml[m
+[36m@@ -0,0 +1,5 @@[m
+[32m+[m[32mapiVersion: v1[m
+[32m+[m[32mkind: ServiceAccount[m
+[32m+[m[32mmetadata:[m
+[32m+[m[32m  name: {{ .Values.serviceAccount.name }}[m
+[32m+[m[32m  namespace: {{ .Values.namespace }}[m
+[1mdiff --git a/helm/projcharts/templates/mc-CIP.yml b/helm/projcharts/templates/mc-CIP.yml[m
+[1mdeleted file mode 100644[m
+[1mindex ab74ddb..0000000[m
+[1m--- a/helm/projcharts/templates/mc-CIP.yml[m
+[1m+++ /dev/null[m
+[36m@@ -1,12 +0,0 @@[m
+[31m-apiVersion: v1[m
+[31m-kind: Service[m
+[31m-metadata:[m
+[31m-  name: vprocache01[m
+[31m-spec:[m
+[31m-  ports:[m
+[31m-  - port: 11211[m
+[31m-    targetPort: vpromc-port[m
+[31m-    protocol: TCP[m
+[31m-  selector:[m
+[31m-    app: vpromc [m
+[31m-  type: ClusterIP[m
+[1mdiff --git a/helm/projcharts/templates/mc-dep.yaml b/helm/projcharts/templates/mc-dep.yaml[m
+[1mnew file mode 100644[m
+[1mindex 0000000..11d41c7[m
+[1m--- /dev/null[m
+[1m+++ b/helm/projcharts/templates/mc-dep.yaml[m
+[36m@@ -0,0 +1,22 @@[m
+[32m+[m[32mapiVersion: apps/v1[m
+[32m+[m[32mkind: Deployment[m
+[32m+[m[32mmetadata:[m
+[32m+[m[32m  name: {{ .Values.vpromc.name }}[m
+[32m+[m[32m  labels:[m
+[32m+[m[32m    app: {{ .Values.vpromc.name }}[m
+[32m+[m[32mspec:[m
+[32m+[m[32m  replicas: 1[m
+[32m+[m[32m  selector:[m
+[32m+[m[32m    matchLabels:[m
+[32m+[m[32m      app: {{ .Values.vpromc.name }}[m
+[32m+[m[32m  template:[m
+[32m+[m[32m    metadata:[m
+[32m+[m[32m      labels:[m
+[32m+[m[32m        app: {{ .Values.vpromc.name }}[m
+[32m+[m[32m    spec:[m
+[32m+[m[32m      containers:[m
+[32m+[m[32m      - name: {{ .Values.vpromc.name }}[m
+[32m+[m[32m        image: {{ .Values.vpromc.image }}[m
+[32m+[m[32m        ports:[m
+[32m+[m[32m        - name: memcache-port[m
+[32m+[m[32m          containerPort: {{ .Values.vpromc.port }}[m
+[1mdiff --git a/helm/projcharts/templates/mc-svc.yaml b/helm/projcharts/templates/mc-svc.yaml[m
+[1mnew file mode 100644[m
+[1mindex 0000000..9a710f4[m
+[1m--- /dev/null[m
+[1m+++ b/helm/projcharts/templates/mc-svc.yaml[m
+[36m@@ -0,0 +1,12 @@[m
+[32m+[m[32mapiVersion: v1[m
+[32m+[m[32mkind: Service[m
+[32m+[m[32mmetadata:[m
+[32m+[m[32m  name: {{ .Values.vpromc.serviceName }}[m
+[32m+[m[32mspec:[m
+[32m+[m[32m  ports:[m
+[32m+[m[32m  - port: {{ .Values.vpromc.port }}[m
+[32m+[m[32m    targetPort: {{ .Values.vpromc.targetPort }}[m
+[32m+[m[32m    protocol: TCP[m
+[32m+[m[32m  selector:[m
+[32m+[m[32m    app: {{ .Values.vpromc.name }}[m
+[32m+[m[32m  type: ClusterIP[m
+[1mdiff --git a/helm/projcharts/templates/mcdep.yml b/helm/projcharts/templates/mcdep.yml[m
+[1mdeleted file mode 100644[m
+[1mindex d7e1804..0000000[m
+[1m--- a/helm/projcharts/templates/mcdep.yml[m
+[1m+++ /dev/null[m
+[36m@@ -1,22 +0,0 @@[m
+[31m-apiVersion: apps/v1[m
+[31m-kind: Deployment[m
+[31m-metadata:[m
+[31m-  name: vpromc[m
+[31m-  labels:[m
+[31m-    app: vpromc[m
+[31m-spec:[m
+[31m-  selector:[m
+[31m-    matchLabels:[m
+[31m-      app: vpromc[m
+[31m-  replicas: 1[m
+[31m-  template:[m
+[31m-    metadata:[m
+[31m-      labels:[m
+[31m-        app: vpromc[m
+[31m-    spec:[m
+[31m-      containers:[m
+[31m-      - name: vpromc[m
+[31m-        image: memcached[m
+[31m-        ports:[m
+[31m-        - name: vpromc-port[m
+[31m-          containerPort: 11211[m
+[1mdiff --git a/helm/projcharts/templates/rmq-CIP-service.yml b/helm/projcharts/templates/rmq-CIP-service.yml[m
+[1mdeleted file mode 100644[m
+[1mindex 3fc4fdc..0000000[m
+[1m--- a/helm/projcharts/templates/rmq-CIP-service.yml[m
+[1m+++ /dev/null[m
+[36m@@ -1,12 +0,0 @@[m
+[31m-apiVersion: v1[m
+[31m-kind: Service[m
+[31m-metadata:[m
+[31m-  name: vpromq01[m
+[31m-spec:[m
+[31m-  ports:[m
+[31m-  - port: 5672[m
+[31m-    targetPort: 5672[m
+[31m-    protocol: TCP[m
+[31m-  selector:[m
+[31m-    app: vpromq01[m
+[31m-  type: ClusterIP[m
+[1mdiff --git a/helm/projcharts/templates/rmq-dep.yml b/helm/projcharts/templates/rmq-dep.yml[m
+[1mindex 27be627..b80abd6 100644[m
+[1m--- a/helm/projcharts/templates/rmq-dep.yml[m
+[1m+++ b/helm/projcharts/templates/rmq-dep.yml[m
+[36m@@ -1,31 +1,30 @@[m
+ apiVersion: apps/v1[m
+ kind: Deployment[m
+ metadata:[m
+[31m-  name: vpromq01[m
+[32m+[m[32m  name: {{ .Values.vprormq.name }}  # Updated from rmqdep to vprormq[m
+   labels:[m
+[31m-    app: vpromq01[m
+[32m+[m[32m    app: {{ .Values.vprormq.name }}  # Updated from rmqdep to vprormq[m
+ spec:[m
+[32m+[m[32m  replicas: 1[m
+   selector:[m
+     matchLabels:[m
+[31m-      app: vpromq01[m
+[31m-  replicas: 1[m
+[32m+[m[32m      app: {{ .Values.vprormq.name }}  # Updated from rmqdep to vprormq[m
+   template:[m
+     metadata:[m
+       labels:[m
+[31m-        app: vpromq01[m
+[32m+[m[32m        app: {{ .Values.vprormq.name }}  # Updated from rmqdep to vprormq[m
+     spec:[m
+       containers:[m
+[31m-      - name: vpromq01[m
+[31m-        image: rabbitmq[m
+[32m+[m[32m      - name: {{ .Values.vprormq.name }}  # Updated from rmqdep to vprormq[m
+[32m+[m[32m        image: {{ .Values.vprormq.image }}  # Updated from rmqdep to vprormq[m
+         ports:[m
+[31m-        - name: vpromq01-port[m
+[31m-          containerPort: 5672[m
+[31m-        env: [m
+[31m-         - name: RABBITMQ_DEFAULT_PASS[m
+[31m-           valueFrom:[m
+[31m-             secretKeyRef:[m
+[31m-               name: app-secret[m
+[31m-               key: rmq-pass[m
+[31m-         - name: RABBITMQ_DEFAULT_USER[m
+[31m-           value: "guest"[m
+[31m-[m
+[32m+[m[32m        - name: rabbitmq-port[m
+[32m+[m[32m          containerPort: {{ .Values.vprormq.port }}  # Updated from rmqdep to vprormq[m
+[32m+[m[32m        env:[m
+[32m+[m[32m        - name: RABBITMQ_DEFAULT_PASS[m
+[32m+[m[32m          valueFrom:[m
+[32m+[m[32m            secretKeyRef:[m
+[32m+[m[32m              name: {{ .Values.vprormq.secretKeyRef.name }}  # Updated from rmqdep to vprormq[m
+[32m+[m[32m              key: {{ .Values.vprormq.secretKeyRef.key }}  # Updated from rmqdep to vprormq[m
+[32m+[m[32m        - name: RABBITMQ_DEFAULT_USER[m
+[32m+[m[32m          value: {{ .Values.vprormq.username }}  # Updated from rmqdep to vprormq[m
+[1mdiff --git a/helm/projcharts/templates/rmq-svc.yaml b/helm/projcharts/templates/rmq-svc.yaml[m
+[1mnew file mode 100644[m
+[1mindex 0000000..0c51a00[m
+[1m--- /dev/null[m
+[1m+++ b/helm/projcharts/templates/rmq-svc.yaml[m
+[36m@@ -0,0 +1,12 @@[m
+[32m+[m[32mapiVersion: v1[m
+[32m+[m[32mkind: Service[m
+[32m+[m[32mmetadata:[m
+[32m+[m[32m  name: {{ .Values.vprormq.serviceName }}[m
+[32m+[m[32mspec:[m
+[32m+[m[32m  ports:[m
+[32m+[m[32m  - port: {{ .Values.vprormq.port }}[m
+[32m+[m[32m    targetPort: {{ .Values.vprormq.targetPort }}[m
+[32m+[m[32m    protocol: TCP[m
+[32m+[m[32m  selector:[m
+[32m+[m[32m    app: {{ .Values.vprormq.name }}[m
+[32m+[m[32m  type: ClusterIP[m
+[1mdiff --git a/helm/projcharts/templates/vproapp-service.yml b/helm/projcharts/templates/vproapp-service.yml[m
+[1mdeleted file mode 100644[m
+[1mindex 3c5510c..0000000[m
+[1m--- a/helm/projcharts/templates/vproapp-service.yml[m
+[1m+++ /dev/null[m
+[36m@@ -1,12 +0,0 @@[m
+[31m-apiVersion: v1[m
+[31m-kind: Service[m
+[31m-metadata:[m
+[31m-  name: my-app[m
+[31m-spec:[m
+[31m-  ports:[m
+[31m-  - port: 8080[m
+[31m-    protocol: TCP[m
+[31m-    targetPort: 8080[m
+[31m-  selector:[m
+[31m-    app: vproapp[m
+[31m-  type: ClusterIP[m
+[1mdiff --git a/helm/projcharts/templates/vproappdep.yml b/helm/projcharts/templates/vproappdep.yml[m
+[1mdeleted file mode 100644[m
+[1mindex f728807..0000000[m
+[1m--- a/helm/projcharts/templates/vproappdep.yml[m
+[1m+++ /dev/null[m
+[36m@@ -1,29 +0,0 @@[m
+[31m-apiVersion: apps/v1[m
+[31m-kind: Deployment[m
+[31m-metadata:[m
+[31m-  name: vproapp[m
+[31m-  labels:[m
+[31m-    app: vproapp[m
+[31m-spec:[m
+[31m-  replicas: 1[m
+[31m-  selector:[m
+[31m-    matchLabels:[m
+[31m-      app: vproapp[m
+[31m-  template:[m
+[31m-    metadata:[m
+[31m-      labels:[m
+[31m-        app: vproapp[m
+[31m-    spec:[m
+[31m-      containers:[m
+[31m-      - name: vproapp[m
+[31m-        image: {{ .Values.appimage }}:{{ .Values.apptag }}[m
+[31m-        ports:[m
+[31m-        - name: vproapp-port[m
+[31m-          containerPort: 8080[m
+[31m-      initContainers:[m
+[31m-      - name: init-mydb[m
+[31m-        image: busybox[m
+[31m-        command: ['sh', '-c', 'until nslookup vprodb.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for mydb; sleep 2; done;'][m
+[31m-      - name: init-memcache[m
+[31m-        image: busybox[m
+[31m-        command: ['sh', '-c', 'until nslookup vprocache01.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for mydb; sleep 2; done;'][m
+[1mdiff --git a/helm/projcharts/templates/vprodbdep.yml b/helm/projcharts/templates/vprodbdep.yml[m
+[1mdeleted file mode 100644[m
+[1mindex a11b9e9..0000000[m
+[1m--- a/helm/projcharts/templates/vprodbdep.yml[m
+[1m+++ /dev/null[m
+[36m@@ -1,32 +0,0 @@[m
+[31m-apiVersion: apps/v1[m
+[31m-kind: Deployment[m
+[31m-metadata:[m
+[31m-  name: vprodb[m
+[31m-  labels:[m
+[31m-    app: vprodb[m
+[31m-spec:[m
+[31m-  selector:[m
+[31m-    matchLabels:[m
+[31m-      app: vprodb[m
+[31m-  replicas: 1[m
+[31m-  template:[m
+[31m-    metadata:[m
+[31m-      labels:[m
+[31m-        app: vprodb[m
+[31m-    spec:[m
+[31m-      containers:[m
+[31m-      - name: vprodb[m
+[31m-        image: vprofile/vprofiledb [m
+[31m-        ports:[m
+[31m-        - name: vprodb-port[m
+[31m-          containerPort: 3306[m
+[31m-        env: [m
+[31m-         - name: MYSQL_ROOT_PASSWORD[m
+[31m-           valueFrom:[m
+[31m-             secretKeyRef:[m
+[31m-               name: app-secret[m
+[31m-               key: db-pass[m
+[31m-#        env:[m
+[31m-#         - name: MYSQL_ROOT_PASSWORD[m
+[31m-#           value: "vprodbpass"[m
+[31m-[m
+[1mdiff --git a/helm/projcharts/templates/vproingress.yaml b/helm/projcharts/templates/vproingress.yaml[m
+[1mindex 4c7ee48..6b433ad 100644[m
+[1m--- a/helm/projcharts/templates/vproingress.yaml[m
+[1m+++ b/helm/projcharts/templates/vproingress.yaml[m
+[36m@@ -7,13 +7,13 @@[m [mmetadata:[m
+ spec:[m
+   ingressClassName: nginx[m
+   rules:[m
+[31m-  - host: eksproject1.satsan.site[m
+[32m+[m[32m  - host: {{ .Values.ingress.host }}[m
+     http:[m
+       paths:[m
+       - path: /[m
+         pathType: Prefix[m
+         backend:[m
+           service:[m
+[31m-            name: my-app[m
+[32m+[m[32m            name: {{ .Values.vproapp.name }}[m
+             port:[m
+[31m-              number: 8080[m
+\ No newline at end of file[m
+[32m+[m[32m              number: {{ .Values.vproapp.port }}[m
