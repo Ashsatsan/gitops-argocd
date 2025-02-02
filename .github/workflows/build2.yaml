@@ -74,7 +74,7 @@ jobs:
     needs: Testing
     permissions:
       id-token: write
-      contents: read 
+      contents: read
 
     steps:
       - name: Checkout code
@@ -107,7 +107,7 @@ jobs:
     needs: DockerBuildPush
     permissions:
       id-token: write
-      contents: read 
+      contents: read
 
     steps:
       - name: Checkout code
@@ -161,22 +161,18 @@ jobs:
             --atomic \
             --timeout 10m
 
-      - name: Wait for ArgoCD components
+      - name: Wait for ArgoCD Components
         run: |
-          echo "Waiting for ArgoCD server..."
+          echo "Waiting for core ArgoCD components..."
+          
+          # Wait for all deployments in argocd namespace
           kubectl wait --namespace argocd \
-            --for=condition=available deployment/argocd-server \
+            --for=condition=available deployment \
+            --all \
             --timeout=300s
           
-          echo "Waiting for ArgoCD repo server..."
-          kubectl wait --namespace argocd \
-            --for=condition=available deployment/argocd-repo-server \
-            --timeout=300s
-          
-          echo "Waiting for ArgoCD application controller..."
-          kubectl wait --namespace argocd \
-            --for=condition=available deployment/argocd-application-controller \
-            --timeout=300s
+          echo "Verifying ArgoCD pods..."
+          kubectl get pods -n argocd
 
       - name: Prepare Application manifest
         run: |
