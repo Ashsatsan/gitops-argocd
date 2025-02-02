@@ -14,15 +14,11 @@ spec:
     helm:
       releaseName: custom-helm-app
       valueFiles:
-        - values.yaml      
-      parameters:
-        - name: appimage
-          value: "{{ secrets.REGISTRY }}/{{ secrets.ECR_REPO_NAME }}"  # Dynamic image repo
-        - name: apptag
-          value: "{{ env.IMAGE_TAG }}"  # Dynamic image tag
+        - values.yaml
   project: default
-
   syncPolicy:
     automated:
-      prune: true  # Automatically delete resources no longer tracked
-      selfHeal: true 
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
