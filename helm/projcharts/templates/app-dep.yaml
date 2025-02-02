@@ -18,7 +18,7 @@ spec:
       - name: vproapp
         image: {{ .Values.appimage }}:{{ .Values.apptag }}
         ports:
-        - name: {{ .Values.vproapp.name }}
+        - name: app-port
           containerPort: {{ .Values.vproapp.port }}
       initContainers:
       - name: init-mydb
