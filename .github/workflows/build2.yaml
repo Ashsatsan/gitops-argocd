@@ -128,59 +128,109 @@ jobs:
           aws sts get-caller-identity
           aws eks describe-cluster --name ${{ env.EKS_CLUSTER }} --region ${{ env.REGION }}
 
-      - name: Update kubeconfig with explicit token
-        run: |
-          # Fetch token and update kubeconfig directly
-          aws eks get-token --cluster-name ${{ env.EKS_CLUSTER }} --region ${{ env.REGION }} | jq -r '.status.token' > token.json
-          kubectl config set-credentials eks-admin --token=$(cat token.json)
-          kubectl config set-context --current --user=eks-admin
-
       - name: Verify Kubernetes access
         run: |
           kubectl get nodes
           kubectl cluster-info
 
-      - name: Set up Helm repositories
+      - name: Set up Helm
         run: |
           helm repo add argo https://argoproj.github.io/argo-helm
           helm repo update
 
-      - name: Install or Upgrade ArgoCD
+      - name: Check existing ArgoCD installation
+        continue-on-error: true
         run: |
-          kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
-          helm upgrade --install argocd argo/argo-cd \
+          if kubectl get namespace argocd >/dev/null 2>&1; then
+            echo "ArgoCD namespace exists"
+            if helm list -n argocd | grep -q "argocd"; then
+              echo "Removing existing ArgoCD installation"
+              helm uninstall argocd -n argocd
+              kubectl delete namespace argocd --timeout=60s
+              sleep 10
+            fi
+          fi
+
+      - name: Install ArgoCD
+        run: |
+          kubectl create namespace argocd
+          helm install argocd argo/argo-cd \
             --namespace argocd \
             --set server.service.type=ClusterIP \
             --set global.securityContext.fsGroup=999 \
-            --wait \
+            --atomic \
             --timeout 10m
 
-      - name: Wait for ArgoCD server to be ready
+      - name: Wait for ArgoCD components
         run: |
+          echo "Waiting for ArgoCD server..."
           kubectl wait --namespace argocd \
             --for=condition=available deployment/argocd-server \
             --timeout=300s
+          
+          echo "Waiting for ArgoCD repo server..."
+          kubectl wait --namespace argocd \
+            --for=condition=available deployment/argocd-repo-server \
+            --timeout=300s
+          
+          echo "Waiting for ArgoCD application controller..."
+          kubectl wait --namespace argocd \
+            --for=condition=available deployment/argocd-application-controller \
+            --timeout=300s
 
-      - name: Update ArgoCD Application YAML
+      - name: Prepare Application manifest
         run: |
-          sed -i "s|{{ secrets.REGISTRY }}/{{ secrets.ECR_REPO_NAME }}|${{ env.REGISTRY }}/${{ secrets.ECR_REPO_NAME }}|g" argocd_app/application.yml
-          sed -i "s|{{ env.IMAGE_TAG }}|${{ env.IMAGE_TAG }}|g" argocd_app/application.yml
+          # Create temporary file to avoid modifying original
+          cp argocd_app/application.yml argocd_app/application_modified.yml
+          
+          # Replace placeholders
+          sed -i "s|{{ secrets.REGISTRY }}/{{ secrets.ECR_REPO_NAME }}|${{ env.REGISTRY }}/${{ secrets.ECR_REPO_NAME }}|g" argocd_app/application_modified.yml
+          sed -i "s|{{ env.IMAGE_TAG }}|${{ env.IMAGE_TAG }}|g" argocd_app/application_modified.yml
+          
+          # Validate the yaml
+          kubectl apply --dry-run=client -f argocd_app/application_modified.yml
 
-      - name: Apply ArgoCD Application
+      - name: Deploy Application
         run: |
-          kubectl apply -f argocd_app/application.yml
-          kubectl wait --for=condition=established --timeout=60s \
-            crd/applications.argoproj.io
+          # Apply the Application manifest
+          kubectl apply -f argocd_app/application_modified.yml
+          
+          # Wait for CRD to be ready
+          echo "Waiting for ArgoCD CRD..."
+          kubectl wait --for=condition=established --timeout=60s crd/applications.argoproj.io || true
+          
+          # Give ArgoCD time to process the application
+          sleep 20
 
-      - name: Verify Deployment
+      - name: Verify Application Deployment
         run: |
-          kubectl wait --for=condition=ready pods --all --timeout=300s --namespace default
-          kubectl get pods --namespace default
-          kubectl get svc --namespace default
-          kubectl get applications -n argocd
+          echo "Checking Application status..."
+          kubectl get application -n argocd custom-helm-app -o wide
+          
+          echo "Checking pods in default namespace..."
+          kubectl get pods -n default
+          
+          echo "Checking services in default namespace..."
+          kubectl get svc -n default
 
-      - name: Check Application Health
+      - name: Monitor Application Health
         run: |
-          kubectl wait --for=condition=ready applications --all --timeout=300s -n argocd
-          echo "Application deployment complete"
-        
+          # Wait for application to be ready
+          kubectl wait --for=condition=ready application/custom-helm-app -n argocd --timeout=300s
+          
+          # Get detailed application status
+          kubectl get application custom-helm-app -n argocd -o jsonpath='{.status.sync.status}'
+          
+          echo "Application deployment completed successfully"
+
+      - name: Debug Info (if needed)
+        if: failure()
+        run: |
+          echo "=== ArgoCD Pods ==="
+          kubectl get pods -n argocd
+          
+          echo "=== ArgoCD Application Status ==="
+          kubectl describe application custom-helm-app -n argocd
+          
+          echo "=== ArgoCD Controller Logs ==="
+          kubectl logs -n argocd deployment/argocd-application-controller --tail=100
