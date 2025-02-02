@@ -200,33 +200,66 @@ jobs:
 
       - name: Verify Application Deployment
         run: |
-          echo "Checking Application status..."
-          kubectl get application -n argocd custom-helm-app -o wide
+          echo "=== Checking ArgoCD Components ==="
+          kubectl get pods -n argocd
           
-          echo "Checking pods in default namespace..."
-          kubectl get pods -n default
+          echo "=== Waiting for Application to Sync ==="
+          # Wait for the Application to be created and start syncing
+          for i in {1..30}; do
+            STATUS=$(kubectl get application custom-helm-app -n argocd -o jsonpath='{.status.sync.status}' 2>/dev/null || echo "NotFound")
+            if [ "$STATUS" != "NotFound" ]; then
+              echo "Application found, status: $STATUS"
+              break
+            fi
+            echo "Waiting for Application to be created... ($i/30)"
+            sleep 10
+          done
           
-          echo "Checking services in default namespace..."
-          kubectl get svc -n default
+          # Wait for sync to complete
+          echo "Waiting for Application to sync..."
+          for i in {1..30}; do
+            SYNC_STATUS=$(kubectl get application custom-helm-app -n argocd -o jsonpath='{.status.sync.status}' 2>/dev/null)
+            HEALTH_STATUS=$(kubectl get application custom-helm-app -n argocd -o jsonpath='{.status.health.status}' 2>/dev/null)
+            
+            echo "Current status - Sync: $SYNC_STATUS, Health: $HEALTH_STATUS"
+            
+            if [ "$SYNC_STATUS" = "Synced" ] && [ "$HEALTH_STATUS" = "Healthy" ]; then
+              echo "Application is synced and healthy!"
+              break
+            fi
+            
+            if [ $i -eq 30 ]; then
+              echo "Timeout waiting for application to sync"
+              kubectl describe application custom-helm-app -n argocd
+              exit 1
+            fi
+            
+            sleep 10
+          done
 
-      - name: Monitor Application Health
+      - name: Verify Resources in Default Namespace
         run: |
-          # Wait for application to be ready
-          kubectl wait --for=condition=ready application/custom-helm-app -n argocd --timeout=300s
+          echo "=== Checking Deployed Resources ==="
+          kubectl get all -n default
           
-          # Get detailed application status
-          kubectl get application custom-helm-app -n argocd -o jsonpath='{.status.sync.status}'
+          echo "=== Waiting for Pods to be Ready ==="
+          kubectl wait --for=condition=ready pods --all -n default --timeout=300s || true
           
-          echo "Application deployment completed successfully"
+          echo "=== Final Status ==="
+          kubectl get pods -n default
+          kubectl get application custom-helm-app -n argocd -o wide
 
       - name: Debug Info (if needed)
         if: failure()
         run: |
-          echo "=== ArgoCD Pods ==="
-          kubectl get pods -n argocd
-          
           echo "=== ArgoCD Application Status ==="
           kubectl describe application custom-helm-app -n argocd
           
           echo "=== ArgoCD Controller Logs ==="
-          kubectl logs -n argocd deployment/argocd-application-controller --tail=100
+          # Use correct StatefulSet name for logs
+          kubectl logs -n argocd statefulset/argocd-application-controller --tail=100
+          
+          echo "=== Application Resources ==="
+          kubectl get all -n default
+
+     
