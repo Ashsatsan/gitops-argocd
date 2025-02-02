@@ -1,25 +1,25 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Values.vprormq.name }}
+  name: {{ .Values.vproapp.name }}
   labels:
-    app: {{ .Values.vprormq.name }}
+    app: {{ .Values.vproapp.name }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: {{ .Values.vprormq.name }}
+      app: {{ .Values.vproapp.name }}
   template:
     metadata:
       labels:
-        app: {{ .Values.vprormq.name }}
+        app: {{ .Values.vproapp.name }}
     spec:
       containers:
       - name: vproapp
-        image: {{ .Values.app.image }}:{{ .Values.app.tag }}
+        image: {{ .Values.appimage }}:{{ .Values.apptag }}
         ports:
-        - name: app-port
-          containerPort: {{ .Values.app.port }}
+        - name: {{ .Values.vproapp.name }}
+          containerPort: {{ .Values.vproapp.port }}
       initContainers:
       - name: init-mydb
         image: busybox
