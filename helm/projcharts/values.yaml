@@ -4,8 +4,6 @@ apptag: ""
 # Application Configuration
 vproapp:
   name: vproapp
-  image: my-app-image
-  tag: latest
   port: 8080
   serviceName: vproapp  
   targetPort: 8080      
