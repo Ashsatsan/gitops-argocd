@@ -184,16 +184,16 @@ jobs:
           cp argocd_app/application.yml argocd_app/application_modified.yml
           
           # Replace placeholders
-          sed -i "s|{{ secrets.REGISTRY }}/{{ secrets.ECR_REPO_NAME }}|${{ env.REGISTRY }}/${{ secrets.ECR_REPO_NAME }}|g" argocd_app/application_modified.yml
-          sed -i "s|{{ env.IMAGE_TAG }}|${{ env.IMAGE_TAG }}|g" argocd_app/application_modified.yml
+          sed -i "s|{{ secrets.REGISTRY }}/{{ secrets.ECR_REPO_NAME }}|${{ env.REGISTRY }}/${{ secrets.ECR_REPO_NAME }}|g" argocd_app/application.yml
+          sed -i "s|{{ env.IMAGE_TAG }}|${{ env.IMAGE_TAG }}|g" argocd_app/application.yml
           
           # Validate the yaml
-          kubectl apply --dry-run=client -f argocd_app/application_modified.yml
+          kubectl apply --dry-run=client -f argocd_app/application.yml
 
       - name: Deploy Application
         run: |
           # Apply the Application manifest
-          kubectl apply -f argocd_app/application_modified.yml
+          kubectl apply -f argocd_app/application.yml
           
           # Wait for CRD to be ready
           echo "Waiting for ArgoCD CRD..."
