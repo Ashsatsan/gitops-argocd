@@ -6,7 +6,7 @@
 
 
 ## IMPORTANT NOTE:
-To execute this project properly first execute the IaC part of the project which create neccessary resource for you which this cicd project will require:
+To execute this project properly first execute the IaC part of the project which will creates neccessary resources for this cicd project:
 [gitops-terra](https://github.com/Ashsatsan/gitops-terra)
 
 This repository demonstrates a complete **CI/CD pipeline** using GitHub Actions to build, test, and deploy a custom Helm chart to an Amazon EKS cluster. The deployment leverages **ArgoCD** for GitOps-based continuous delivery and integrates **Docker**, **ECR**, **Helm**, and **Kubernetes**. The project also includes **Infrastructure as Code (IaC)** for provisioning the EKS cluster and associated resources.
