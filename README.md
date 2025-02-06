@@ -1,6 +1,16 @@
-# GitOps Deployment with ArgoCD and Helm
+# GitOps Deployment with EKS, ArgoCD and Helm
+
+##Project Architecture
+
+![Stack Diagram](https://github.com/Ashsatsan/gitops-argocd/blob/main/images/NEW%20ONE%20-%20Copy.png?raw=true) 
+
+
+##IMPORTANT NOTE:
+To execute this project properly first execute the IaC part of the project which create neccessary resource for you which this cicd project will require:
+[gitops-terra](https://github.com/Ashsatsan/gitops-terra)
 
 This repository demonstrates a complete **CI/CD pipeline** using GitHub Actions to build, test, and deploy a custom Helm chart to an Amazon EKS cluster. The deployment leverages **ArgoCD** for GitOps-based continuous delivery and integrates **Docker**, **ECR**, **Helm**, and **Kubernetes**. The project also includes **Infrastructure as Code (IaC)** for provisioning the EKS cluster and associated resources.
+
 
 ## Table of Contents
 
@@ -18,8 +28,9 @@ This repository demonstrates a complete **CI/CD pipeline** using GitHub Actions 
 9. [Deployment Instructions](#deployment-instructions)
 10. [Testing Locally](#testing-locally)
 11. [Security Considerations](#security-considerations)
-12. [Contributing](#contributing)
-13. [License](#license)
+12. [Verify](#Verify)
+13. [Contributing](#contributing)
+14. [License](#license)
 
 ---
 
@@ -58,7 +69,7 @@ The architecture consists of the following components:
 4. **Custom Helm Chart**:
    - Defines Kubernetes resources for the application, including deployments, services, and ingress.
 
-![Stack Diagram](path/to/stack-image.png) <!-- Replace with the actual path to your stack image -->
+![CICD Diagram](https://github.com/Ashsatsan/gitops-argocd/blob/main/images/NEW%20ONE.png?raw=true) <!-- Replace with the actual path to your stack image -->
 
 ---
 
@@ -160,58 +171,27 @@ SonarCloud is integrated into the CI/CD pipeline to perform static code analysis
 
 1. **Create a SonarCloud Account**:
    - Sign up at [https://sonarcloud.io](https://sonarcloud.io) using your GitHub account.
+   - After that create a organization and project key
+   - Here's a demonstration
 
-2. **Generate a Token**:
+   ![image alt](https://github.com/Ashsatsan/gitops-argocd/blob/main/images/gitops5.png?raw=true)
+
+   - Also create a quality gate
+
+   ![image alt](https://github.com/Ashsatsan/gitops-argocd/blob/main/images/gitops6.png?raw=true)
+   
+   
+3. **Generate a Token**:
    - Go to **User Settings > Security** and generate a token. Copy the token value.
 
-3. **Register Secrets in GitHub**:
+4. **Register Secrets in GitHub**:
    - Add the following secrets to your GitHub repository under **Settings > Secrets and Variables > Actions**:
      - `SONAR_URL`: `https://sonarcloud.io`
      - `SONAR_ORGANIZATION`: Your SonarCloud organization name.
      - `SONAR_PROJECT_KEY`: Your project key from SonarCloud.
      - `SONAR_TOKEN`: The token you generated.
 
----
 
-## Troubleshooting and Issue Resolution
-
-### Common Issues and Solutions
-
-1. **Docker Image Not Found in ECR**:
-   - Ensure the ECR repository exists and the correct `REGISTRY` and `ECR_REPO_NAME` are configured in GitHub Secrets.
-   - Verify that the image was successfully pushed to ECR:
-     ```bash
-     aws ecr describe-images --repository-name vprofile-repo --region us-east-2
-     ```
-
-2. **ArgoCD Sync Failures**:
-   - Check the status of the ArgoCD application:
-     ```bash
-     kubectl get application custom-helm-app -n argocd -o wide
-     ```
-   - Review logs for debugging:
-     ```bash
-     kubectl logs -n argocd statefulset/argocd-application-controller --tail=100
-     ```
-
-3. **Pods Stuck in Pending State**:
-   - Verify PersistentVolumeClaims (PVCs) are bound:
-     ```bash
-     kubectl get pvc
-     ```
-   - Check node availability and resource constraints.
-
-4. **Ingress Host Not Resolving**:
-   - Ensure the `ingress.host` in `values.yaml` matches your domain and DNS is configured correctly.
-   - Example:
-     ```yaml
-     ingress:
-       host: app.example.com
-     ```
-
-5. **AWS Authentication Errors**:
-   - Ensure the `ROLE_ARN` is correctly configured in GitHub secrets.
-   - Validate IAM role permissions for EKS and ECR.
 
 ---
 
@@ -303,6 +283,64 @@ To test the deployment locally:
 4. **Network Security**:
    - Use private subnets and security groups to restrict access to the EKS cluster.
 
+---
+
+## Troubleshooting and Issue Resolution
+
+### Common Issues and Solutions
+
+1. **Docker Image Not Found in ECR**:
+   - Ensure the ECR repository exists and the correct `REGISTRY` and `ECR_REPO_NAME` are configured in GitHub Secrets.
+   - Verify that the image was successfully pushed to ECR:
+     ```bash
+     aws ecr describe-images --repository-name vprofile-repo --region us-east-2
+     ```
+
+2. **ArgoCD Sync Failures**:
+   - Check the status of the ArgoCD application:
+     ```bash
+     kubectl get application custom-helm-app -n argocd -o wide
+     ```
+   - Review logs for debugging:
+     ```bash
+     kubectl logs -n argocd statefulset/argocd-application-controller --tail=100
+     ```
+
+3. **Pods Stuck in Pending State**:
+   - Verify PersistentVolumeClaims (PVCs) are bound:
+     ```bash
+     kubectl get pvc
+     ```
+   - Check node availability and resource constraints.
+
+4. **Ingress Host Not Resolving**:
+   - Ensure the `ingress.host` in `values.yaml` matches your domain and DNS is configured correctly.
+   - Example:
+     ```yaml
+     ingress:
+       host: app.example.com
+     ```
+
+5. **AWS Authentication Errors**:
+   - Ensure the `ROLE_ARN` is correctly configured in GitHub secrets.
+   - Validate IAM role permissions for EKS and ECR.
+
+---
+
+##Verify
+
+1.Verify if the image are getting pushed inside the AWS ECR , check the tag name as well
+
+ ![image alt](https://github.com/Ashsatsan/gitops-argocd/blob/main/images/gitops6.png?raw=true)
+
+2. Verify the pods if they are synced proper or not
+
+ ![image alt](https://github.com/Ashsatsan/gitops-argocd/blob/main/images/gitops9.png?raw=true)
+
+3. Lastly verify if the main application is up and running or not
+
+![image alt](https://github.com/Ashsatsan/gitops-argocd/blob/main/images/gitops_resultwb.png?raw=true)
+ 
 ---
 
 ## Contributing
