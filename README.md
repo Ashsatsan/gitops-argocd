@@ -1,11 +1,11 @@
 # GitOps Deployment with EKS, ArgoCD and Helm
 
-##Project Architecture
+# Project Architecture
 
 ![Stack Diagram](https://github.com/Ashsatsan/gitops-argocd/blob/main/images/NEW%20ONE%20-%20Copy.png?raw=true) 
 
 
-##IMPORTANT NOTE:
+# IMPORTANT NOTE:
 To execute this project properly first execute the IaC part of the project which create neccessary resource for you which this cicd project will require:
 [gitops-terra](https://github.com/Ashsatsan/gitops-terra)
 
