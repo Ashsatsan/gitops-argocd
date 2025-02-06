@@ -329,11 +329,11 @@ To test the deployment locally:
 
 ##Verify
 
-1.Verify if the image are getting pushed inside the AWS ECR , check the tag name as well
+1.Verify if the images are getting pushed or not inside the AWS ECR, also check the tag name as well.
 
  ![image alt](https://github.com/Ashsatsan/gitops-argocd/blob/main/images/gitops6.png?raw=true)
 
-2. Verify the pods if they are synced proper or not
+2. Verify the pods if they are synced properly or not
 
  ![image alt](https://github.com/Ashsatsan/gitops-argocd/blob/main/images/gitops9.png?raw=true)
 
