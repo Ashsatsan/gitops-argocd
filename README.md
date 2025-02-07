@@ -69,7 +69,7 @@ The architecture consists of the following components:
 4. **Custom Helm Chart**:
    - Defines Kubernetes resources for the application, including deployments, services, and ingress.
 
-![CICD Diagram](https://github.com/Ashsatsan/gitops-argocd/blob/main/images/NEW%20ONE.png?raw=true) <!-- Replace with the actual path to your stack image -->
+![CICD Diagram](https://github.com/Ashsatsan/gitops-argocd/blob/main/images/updated%20argocd%20-%20Copy%20(2).png?raw=true) <!-- Replace with the actual path to your stack image -->
 
 ---
 
