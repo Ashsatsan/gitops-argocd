@@ -2,7 +2,7 @@
 
 ## Project Architecture
 
-![Stack Diagram](https://github.com/Ashsatsan/gitops-argocd/blob/main/images/NEW%20ONE%20-%20Copy.png?raw=true) 
+![Stack Diagram](https://github.com/Ashsatsan/gitops-argocd/blob/main/images/updated%20argocd.png?raw=true) 
 
 
 ## IMPORTANT NOTE:
